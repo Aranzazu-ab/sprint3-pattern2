@@ -9,6 +9,6 @@ public class StockBrokerAgency implements Observer{
 
     @Override
     public void uptade(String message) {
-        System.out.println(name + "received notification: "+ message);
+        System.out.println(name + " received notification: "+ message);
     }
 }
