@@ -8,6 +8,6 @@ public class MatchaBase implements BubbleTea{
 
     @Override
     public double getCost() {
-        return 3.20;
+        return 4.00;
     }
 }

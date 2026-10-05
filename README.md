@@ -252,4 +252,168 @@ level2Test/
 - Java 17 or newer (Java 11 also works)
 - JUnit 5
 
+# Pattern Decorator
+
+A small Java project that builds customized Bubble Teas.
+It uses the **Decorator pattern** to add ingredients to a drink dynamically.
+
+## What is this project?
+
+A Bubble Tea always starts with a **base**:
+
+| Base | Price  |
+|------|--------|
+| Latte (`LatteBase`) | 3.50 € |
+| Matcha (`MatchaBase`) | 4.00 € |
+| Tea (`TeaBase`) | 3.00 € |
+
+After that, you can add as many **extras** as you want:
+
+| Extra | Price |
+|-------|-------|
+| Ice (`Ice`) | +0.25 € |
+| Sugar (`Sugar`) | +0.30 € |
+| Tapioca (`Tapioca`) | +0.50 € |
+| Flavor (`Flavor`) | +0.60 € for each flavor |
+
+Each extra changes both the **cost** and the **description** of the drink.
+If you add two flavors, the cost increases by 1.20 €.
+
+## Main ideas
+
+### Decorator pattern
+A decorator **wraps** another Bubble Tea and adds something to it.
+The wrapped object and the decorator share the same interface, so we can wrap a decorator with another decorator as many times as we want.
+
+Without this pattern, we would need one subclass for every possible combination
+(`LatteWithTapiocaAndIce`, `MatchaWithSugarAndTapioca`, ...). With the Decorator, we only need **one class per ingredient**.
+
+### Composition instead of inheritance
+We do not extend a drink to add features. We **wrap** it:
+
+```java
+BubbleTea tea = new LatteBase();
+tea = new Tapioca(tea);
+tea = new Sugar(tea);
+tea = new Flavor(tea, "Strawberry");
+tea = new Flavor(tea, "Mango");
+
+System.out.println(tea.getDescription());
+// Latte Bubble Tea + Tapioca + Sugar + Flavor: Strawberry + Flavor: Mango
+
+System.out.println(tea.getCost());
+// 3.50 + 0.50 + 0.30 + 0.60 + 0.60 = 5.50
+```
+
+### Delegation
+Each decorator calls the wrapped tea, then adds its own part.
+When we call `getCost()`, the call goes **inside** the layers until it reaches the base.
+Then the values are added **on the way back**:
+
+```
+Flavor(Mango).getCost()
+ └─ Flavor(Strawberry).getCost()
+     └─ Sugar.getCost()
+         └─ Tapioca.getCost()
+             └─ LatteBase.getCost()  → 3.50
+             ← 3.50 + 0.50 = 4.00
+         ← 4.00 + 0.30 = 4.30
+     ← 4.30 + 0.60 = 4.90
+ ← 4.90 + 0.60 = 5.50
+```
+
+## Project structure
+
+| File | What it does |
+|------|--------------|
+| `BubbleTea` | Interface. It declares `getDescription()` and `getCost()`. |
+| `LatteBase` | Base drink. Description `Latte Bubble Tea`, cost 3.50. |
+| `MatchaBase` | Base drink. Description `Matcha Bubble Tea`, cost 3.20. |
+| `TeaBase` | Base drink. Description `Tea Bubble Tea`, cost 3.00. |
+| `BubbleTeaDecorator` | Abstract class. It implements `BubbleTea`, stores the wrapped tea and delegates both methods to it. |
+| `Ice` | Decorator. Adds ` + Ice` and 0.25 €. |
+| `Sugar` | Decorator. Adds ` + Sugar` and 0.30 €. |
+| `Tapioca` | Decorator. Adds ` + Tapioca` and 0.50 €. |
+| `Flavor` | Decorator. Stores the flavor name. Adds ` + Flavor: <name>` and 0.60 €. |
+
+
+## Flow of the wrapping
+
+```
+LatteBase  ──►  Tapioca(LatteBase)  ──►  Sugar(Tapioca(...))  ──►  Flavor(Sugar(...))  ──► ...
+ (base)            (decorator)              (decorator)               (decorator)
+```
+
+Any decorator can wrap any `BubbleTea`, so the order and the number of extras are free.
+The order only changes the text of the description. The final cost is always the same.
+
+## Examples
+
+**Simple tea with ice**
+
+```java
+BubbleTea tea = new Ice(new TeaBase());
+// Description: Tea Bubble Tea + Ice
+// Cost: 3.00 + 0.25 = 3.25
+```
+
+**Matcha with sugar and tapioca**
+
+```java
+BubbleTea tea = new MatchaBase();
+tea = new Sugar(tea);
+tea = new Tapioca(tea);
+// Description: Matcha Bubble Tea + Sugar + Tapioca
+// Cost: 3.20 + 0.30 + 0.50 = 4.00
+```
+
+**Latte with two flavors**
+
+```java
+BubbleTea tea = new LatteBase();
+tea = new Flavor(tea, "Strawberry");
+tea = new Flavor(tea, "Mango");
+// Description: Latte Bubble Tea + Flavor: Strawberry + Flavor: Mango
+// Cost: 3.50 + 0.60 + 0.60 = 4.70
+```
+
+## How the Decorator roles map to this project
+
+| Classic Decorator role | In this project |
+|------------------------|-----------------|
+| Component | `BubbleTea` |
+| Concrete component | `LatteBase`, `MatchaBase`, `TeaBase` |
+| Decorator | `BubbleTeaDecorator` |
+| Concrete decorator | `Ice`, `Sugar`, `Tapioca`, `Flavor` |
+| `operation()` | `getDescription()` and `getCost()` |
+| Client | The unit tests |
+
+## SOLID principles
+
+- **Single Responsibility:** each class has one job (one base or one ingredient).
+- **Open/Closed:** we can add a new ingredient (for example `Cream`) without changing any existing class.
+- **Liskov Substitution:** a decorator can be used anywhere a `BubbleTea` is expected.
+- **Dependency Inversion:** the decorators depend on the `BubbleTea` interface, not on concrete bases.
+
+## Tests
+
+The tests use **JUnit 5**. They build different Bubble Teas and check the description and the cost.
+
+Costs are `double` values, so the tests compare them with a small margin (`delta`):
+
+```java
+assertEquals(5.50, tea.getCost(), 0.001);
+```
+
+To run them with Maven:
+
+```
+mvn test
+```
+
+## Requirements
+
+- Java 11 or higher
+- Maven
+- JUnit 5
 
