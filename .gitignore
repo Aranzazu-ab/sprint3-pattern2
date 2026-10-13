@@ -1,1 +1,17 @@
-.idea
+# Maven
+target/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Compilados y logs
+*.class
+*.log
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
